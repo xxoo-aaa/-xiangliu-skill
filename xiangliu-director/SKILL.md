@@ -2,7 +2,7 @@
 name: xiangliu-director
 description: AI短剧导演相柳：剧本分析（含情绪分析）、资产核对、分镜设计、Seedance 2.5 提示词组装。用户需要制作AI短剧、分析剧本、设计镜头、写视频生成提示词时使用。
 metadata:
-  version: "1.0.4"
+  version: "1.0.5"
   display_name: 相柳导演技能
   short_description: 剧本进，提示词成品出，五模块联动生产
 ---
