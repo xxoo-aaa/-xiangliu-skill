@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-五锁自检脚本：检查提示词成品的镜头切换
+六锁自检脚本：检查提示词成品的镜头切换
 用法：python check_shots.py 提示词文件.txt
-检查五条（与手册规则一致）：
+检查六条（与手册规则一致）：
 1. 写法：景别槽必须能拆出"主体+景别词"；机位槽必须含"机位"两字
 2. 变化：相邻两镜的主体、机位、景别，至少两项不同
 3. 连续：禁止连续三个或三个以上镜头为同一主体；
    同主体连续镜头内，机位禁止来回切（第1词＝第3词）
-4. 时长：单镜超过4秒报警；相邻镜头时间不衔接（重叠或空档）报警
+4. 时长：单镜超过4秒报警；相邻镜头时间不衔接（重叠或空档）报警；
+   段落总时长超过30秒报警
 5. 禁词：镜头正文出现硬禁项词（死死、紧绷、变色脸色、眼神发亮类）逐镜报警
+6. 骨架：镜2起正文必须以"承接"开头（每段首镜省略）；每镜正文必须含"落幅"
 运镜槽不查词库：有没有入参照表的高级运镜都放行，只禁止空槽。
 """
 import re
@@ -46,7 +48,7 @@ BANNED = [
     "顶死", "瞪死", "咬死", "按死",
 ]
 
-HEAD = re.compile(r"【镜头(\d+)｜([^｜]+)｜([^｜]+)｜([^｜]+)｜([^｜]+)】")
+HEAD = re.compile(r"【镜头(\d+)｜([^\n｜]+)｜([^\n｜]+)｜([^\n｜]+)｜([^\n｜]+)】")
 
 TIME = re.compile(r"(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*s", re.IGNORECASE)
 
@@ -84,6 +86,7 @@ def parse(text):
         subject, jb = split_subject_jingbie(m.group(3))
         t_start, t_end = parse_time(m.group(2))
         body_end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        body = re.sub(r"^[\s：:]+", "", text[m.end() : body_end])  # 去掉"】："的冒号
         shots.append(
             {
                 "num": int(m.group(1)),
@@ -95,7 +98,7 @@ def parse(text):
                 "jingbie": jb,
                 "cam_raw": m.group(4).strip(),
                 "cam": normalize_cam(m.group(4)),
-                "body": text[m.end():body_end],
+                "body": body,
             }
         )
     return shots
@@ -179,6 +182,15 @@ def check(text):
             )
         prev_end = s["end"]
 
+    # 段落总时长：最后一镜的结束时间不得超过30秒
+    if shots:
+        last = shots[-1]
+        if last["end"] is not None and last["end"] > 30 + 1e-9:
+            problems.append(
+                f"段落总时长{last['end']:g}秒，超过30秒上限——"
+                f"段由旁白行累计时长切，30s为上限非配额，超出的旁白划归下一段"
+            )
+
     # 锁五：禁词（逐镜正文扫描硬禁项；长词命中后不再报其包含的短词）
     for s in shots:
         hits = []
@@ -187,6 +199,17 @@ def check(text):
                 hits.append(w)
         if hits:
             problems.append(f"镜{s['num']}：正文出现禁词“{'、'.join(hits)}”")
+
+    # 锁六：骨架（镜2起正文必须以"承接"开头；每镜正文必须含"落幅"）
+    for s in shots:
+        body = s["body"].strip()
+        if s["num"] >= 2 and not body.startswith("承接"):
+            problems.append(
+                f"镜{s['num']}：正文开头没有承接——镜2起必须以“承接上一镜”开头"
+                f"（每段首镜省略）"
+            )
+        if "落幅" not in body:
+            problems.append(f"镜{s['num']}：正文没有落幅收尾")
 
     return shots, problems
 
@@ -238,7 +261,7 @@ def main():
             print(f"  {i}. {p}")
         print("结论：不过检，改镜后重新跑。")
     else:
-        print("结论：五锁全过，可以组装。")
+        print("结论：六锁全过，可以组装。")
 
 
 if __name__ == "__main__":
