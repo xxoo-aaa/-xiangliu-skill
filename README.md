@@ -89,7 +89,7 @@ flowchart LR
 
 ## 六锁自检
 
-每段提示词必须过 [scripts/check_shots.py](scripts/check_shots.py) 六把锁才能交付：
+每段提示词必须过 [scripts/check_shots.py](xiangliu-director/scripts/check_shots.py) 六把锁才能交付：
 
 | 锁 | 检查 |
 |---|---|
@@ -100,13 +100,13 @@ flowchart LR
 | 禁词 | 硬禁项逐镜扫描（死死/紧绷/僵类/面部变色/眼神发亮/网文套式） |
 | 骨架 | 镜2起正文以"承接"开头；每镜含"落幅" |
 
-用法：`python scripts/check_shots.py 提示词文件.txt`
+用法：`python xiangliu-director/scripts/check_shots.py 提示词文件.txt`
 
 禁词表与文风规则同源——模型会把"煞白"刷成油漆、把"僵"演成蜡像，所以这些词在落笔层就被禁止，脚本层兜底。
 
 ## 怎么用
 
-**安装**：将本仓库整体放入 TRAE 技能目录（如 `.trae/skills/xiangliu-director/`），AI 自动加载。
+**安装**：将 `xiangliu-director/` 文件夹放入 TRAE 技能目录（如 `.trae/skills/`），AI 自动加载。
 
 **两种用法**：
 
